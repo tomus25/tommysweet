@@ -1,5 +1,6 @@
 // @ts-nocheck
 "use client";
+import "./globals.css";
 
 // In a real Next.js app, also import Tailwind globals, e.g.:
 // import "./globals.css";

@@ -1,5 +1,6 @@
 "use client";
 import "./globals.css";
+"use client";
 import React, { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 
@@ -31,16 +32,16 @@ const SOCIAL_PLACEHOLDER = {
 /*******************
  * Pure helpers     *
  *******************/
-export function toggleSelection(list, item) {
+function toggleSelection(list, item) {
   return list.includes(item) ? list.filter((x) => x !== item) : [...list, item];
 }
-export function toggleSet(set, key) {
+function toggleSet(set, key) {
   const next = new Set(set);
   next.has(key) ? next.delete(key) : next.add(key);
   return next;
 }
 /** Build a Telegram-friendly message (Markdown). */
-export function buildTelegramMessage(data) {
+function buildTelegramMessage(data) {
   const lines = [];
   lines.push(`*New Project Request*`);
   if (data.metaTime || data.metaTz) {
@@ -587,3 +588,4 @@ Notes:
 // const prettyGeo = [geoJson.city, geoJson.region, geoJson.country_name].filter(Boolean).join(', ');
 // Then append to your Telegram message as a separate line.
 */
+

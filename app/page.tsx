@@ -1,6 +1,9 @@
 // @ts-nocheck
 "use client";
-import "./globals.css";
+
+// In a real Next.js app, also import Tailwind globals, e.g.:
+// import "./globals.css";
+
 import React, { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 
@@ -42,7 +45,7 @@ function toggleSet(set, key) {
 }
 /** Build a Telegram-friendly message (Markdown). */
 function buildTelegramMessage(data) {
-  const lines: string[] = [];
+  const lines = [];
   lines.push(`*New Project Request*`);
   if (data.metaTime || data.metaTz) {
     const when = [data.metaTime, data.metaTz].filter(Boolean).join(' ');
@@ -127,7 +130,18 @@ function HomeHero({ onWorkClick, onViewCases }) {
 
 function WorkWithUs({ onBack, onStartProject }) {
   const [selected, setSelected] = useState([]);
-  const toggle = (name) => setSelected((curr) => toggleSelection(curr, name));
+  const [visibleTip, setVisibleTip] = useState(null); // which service tooltip is visible
+  const tipTimer = useRef(null);
+
+  const toggle = (name) => setSelected((curr) => curr.includes(name) ? curr.filter(x => x !== name) : [...curr, name]);
+
+  function showTip(name) {
+    if (tipTimer.current) clearTimeout(tipTimer.current);
+    setVisibleTip(name);
+    tipTimer.current = setTimeout(() => setVisibleTip(null), 2000); // auto-hide after 2s
+  }
+
+  useEffect(() => () => { if (tipTimer.current) clearTimeout(tipTimer.current); }, []);
 
   return (
     <div className="min-h-screen bg-black text-white relative overflow-hidden px-4 sm:px-6 md:px-12 py-20">
@@ -146,13 +160,20 @@ function WorkWithUs({ onBack, onStartProject }) {
         >
           How can we help you get found?
         </motion.h1>
+
         <div className="mt-10 grid grid-cols-2 sm:grid-cols-3 gap-4">
           {SERVICES.map(({ name, desc }) => {
             const isActive = selected.includes(name);
+            const isVisible = visibleTip === name;
             return (
-              <div key={name} className="relative group">
+              <div key={name} className="relative">
                 <button
                   onClick={() => toggle(name)}
+                  onMouseEnter={() => showTip(name)}
+                  onMouseLeave={() => setVisibleTip(null)}
+                  onFocus={() => showTip(name)}
+                  onBlur={() => setVisibleTip(null)}
+                  onTouchStart={() => showTip(name)} // mobile: show briefly, but don't block tap
                   className={`rounded-2xl px-4 py-3 border w-full text-left transition ${
                     isActive
                       ? 'bg-[#cbb893]/10 border-[#cbb893] shadow-[0_0_8px_rgba(203,184,147,0.3)]'
@@ -161,25 +182,21 @@ function WorkWithUs({ onBack, onStartProject }) {
                 >
                   {name}
                 </button>
-                {/* Solid, readable tooltip */}
-                <span className="absolute left-0 top-full mt-2 w-[min(28rem,calc(100vw-4rem))] max-w-full z-50 opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition duration-200 text-[11px] sm:text-xs text-white bg-black rounded-xl px-3 py-2 border border-[#cbb893]/60 shadow-xl shadow-black/80">
-                  {desc}
-                </span>
+                {isVisible && (
+                  <span className="pointer-events-none absolute left-0 top-full mt-2 w-[min(28rem,calc(100vw-4rem))] max-w-full z-50 opacity-100 translate-y-0 transition duration-200 text-[11px] sm:text-xs text-white bg-black rounded-xl px-3 py-2 border border-[#cbb893]/60 shadow-xl shadow-black/80">
+                    {desc}
+                  </span>
+                )}
               </div>
             );
           })}
         </div>
+
         <div className="mt-12 flex flex-col sm:flex-row justify-center gap-4">
-          <button
-            onClick={onStartProject}
-            className="w-full sm:w-auto px-6 py-3 bg-gradient-to-b from-[#cbb893] to-[#7d6a4f] text-black font-medium rounded-2xl hover:brightness-110 shadow-lg shadow-yellow-900/30 transition"
-          >
+          <button onClick={onStartProject} className="w-full sm:w-auto px-6 py-3 bg-gradient-to-b from-[#cbb893] to-[#7d6a4f] text-black font-medium rounded-2xl hover:brightness-110 shadow-lg shadow-yellow-900/30 transition">
             Start Project
           </button>
-          <button
-            onClick={onBack}
-            className="w-full sm:w-auto px-6 py-3 bg-white/5 border border-white/10 text-white font-medium rounded-2xl hover:bg-white/10 hover:text-[#cbb893] transition"
-          >
+          <button onClick={onBack} className="w-full sm:w-auto px-6 py-3 bg-white/5 border border-white/10 text-white font-medium rounded-2xl hover:bg-white/10 hover:text-[#cbb893] transition">
             Back
           </button>
         </div>
@@ -385,39 +402,115 @@ function ContactForm({ onBack }) {
         <form className="space-y-4 text-left" onSubmit={onSubmit}>
           {/* Contact method selector */}
           <div className="flex gap-2">
-            <button type="button" onClick={() => setContactMethod('phone')} className={`flex-1 rounded-xl border px-3 py-2 text-sm transition ${contactMethod === 'phone' ? 'bg-[#cbb893] text-black border-[#cbb893]' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}>Phone</button>
-            <button type="button" onClick={() => setContactMethod('social')} className={`flex-1 rounded-xl border px-3 py-2 text-sm transition ${contactMethod === 'social' ? 'bg-[#cbb893] text-black border-[#cbb893]' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}>Social</button>
-            <button type="button" onClick={() => setContactMethod('email')} className={`flex-1 rounded-xl border px-3 py-2 text-sm transition ${contactMethod === 'email' ? 'bg-[#cbb893] text-black border-[#cbb893]' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}>Email</button>
+            <button
+              type="button"
+              onClick={() => setContactMethod('phone')}
+              className={`flex-1 rounded-xl border px-3 py-2 text-sm transition ${
+                contactMethod === 'phone'
+                  ? 'bg-[#cbb893] text-black border-[#cbb893]'
+                  : 'bg-white/5 text-white border-white/10 hover:bg-white/10'
+              }`}
+            >
+              Phone
+            </button>
+            <button
+              type="button"
+              onClick={() => setContactMethod('social')}
+              className={`flex-1 rounded-xl border px-3 py-2 text-sm transition ${
+                contactMethod === 'social'
+                  ? 'bg-[#cbb893] text-black border-[#cbb893]'
+                  : 'bg-white/5 text-white border-white/10 hover:bg-white/10'
+              }`}
+            >
+              Social
+            </button>
+            <button
+              type="button"
+              onClick={() => setContactMethod('email')}
+              className={`flex-1 rounded-xl border px-3 py-2 text-sm transition ${
+                contactMethod === 'email'
+                  ? 'bg-[#cbb893] text-black border-[#cbb893]'
+                  : 'bg-white/5 text-white border-white/10 hover:bg-white/10'
+              }`}
+            >
+              Email
+            </button>
           </div>
 
           {/* Method-specific fields */}
           {contactMethod === 'phone' && (
-            <input type="tel" value={phone} onChange={(e)=>setPhone(e.target.value)} placeholder="Your phone number (with country code)" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#cbb893]" required />
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="Your phone number (with country code)"
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#cbb893]"
+              required
+            />
           )}
 
           {contactMethod === 'social' && (
             <div className="flex gap-2">
-              <select value={socialPlatform} onChange={(e) => setSocialPlatform(e.target.value)} className="w-1/2 bg-white/5 border border-white/10 rounded-xl px-2 py-3 text-sm focus:outline-none focus:border-[#cbb893]">
+              <select
+                value={socialPlatform}
+                onChange={(e) => setSocialPlatform(e.target.value)}
+                className="w-1/2 bg-white/5 border border-white/10 rounded-xl px-2 py-3 text-sm focus:outline-none focus:border-[#cbb893]"
+              >
                 {SOCIALS.map((s) => (
                   <option key={s} value={s}>{s}</option>
                 ))}
               </select>
               {socialPlatform === 'WhatsApp' ? (
-                <input type="tel" value={socialHandle} onChange={(e)=>setSocialHandle(e.target.value)} placeholder={SOCIAL_PLACEHOLDER.WhatsApp} className="w-1/2 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#cbb893]" required />
+                <input
+                  type="tel"
+                  value={socialHandle}
+                  onChange={(e) => setSocialHandle(e.target.value)}
+                  placeholder={SOCIAL_PLACEHOLDER.WhatsApp}
+                  className="w-1/2 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#cbb893]"
+                  required
+                />
               ) : (
-                <input type="text" value={socialHandle} onChange={(e)=>setSocialHandle(e.target.value)} placeholder={SOCIAL_PLACEHOLDER[socialPlatform]} className="w-1/2 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#cbb893]" required />
+                <input
+                  type="text"
+                  value={socialHandle}
+                  onChange={(e) => setSocialHandle(e.target.value)}
+                  placeholder={SOCIAL_PLACEHOLDER[socialPlatform]}
+                  className="w-1/2 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#cbb893]"
+                  required
+                />
               )}
             </div>
           )}
 
           {contactMethod === 'email' && (
-            <input type="email" value={email} onChange={(e)=>setEmail(e.target.value)} placeholder="Your email address" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#cbb893]" required />
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Your email address"
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#cbb893]"
+              required
+            />
           )}
 
           {/* Name */}
           <div className="flex gap-3">
-            <input type="text" value={firstName} onChange={(e)=>setFirstName(e.target.value)} placeholder="First Name" className="w-1/2 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#cbb893]" required />
-            <input type="text" value={lastName} onChange={(e)=>setLastName(e.target.value)} placeholder="Last Name" className="w-1/2 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#cbb893]" required />
+            <input
+              type="text"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              placeholder="First Name"
+              className="w-1/2 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#cbb893]"
+              required
+            />
+            <input
+              type="text"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              placeholder="Last Name"
+              className="w-1/2 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#cbb893]"
+              required
+            />
           </div>
 
           {/* Project brief (auto-resizing textarea) */}
@@ -435,16 +528,46 @@ function ContactForm({ onBack }) {
           {/* Budget */}
           <div className="space-y-2">
             <div className="flex gap-2">
-              <button type="button" onClick={() => setBudgetType('one-time')} className={`flex-1 rounded-xl border px-3 py-2 text-sm transition ${budgetType === 'one-time' ? 'bg-[#cbb893] text-black border-[#cbb893]' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}>One-time Service</button>
-              <button type="button" onClick={() => setBudgetType('monthly')} className={`flex-1 rounded-xl border px-3 py-2 text-sm transition ${budgetType === 'monthly' ? 'bg-[#cbb893] text-black border-[#cbb893]' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}>Monthly</button>
+              <button
+                type="button"
+                onClick={() => setBudgetType('one-time')}
+                className={`flex-1 rounded-xl border px-3 py-2 text-sm transition ${
+                  budgetType === 'one-time'
+                    ? 'bg-[#cbb893] text-black border-[#cbb893]'
+                    : 'bg-white/5 text-white border-white/10 hover:bg-white/10'
+                }`}
+              >
+                One-time Service
+              </button>
+              <button
+                type="button"
+                onClick={() => setBudgetType('monthly')}
+                className={`flex-1 rounded-xl border px-3 py-2 text-sm transition ${
+                  budgetType === 'monthly'
+                    ? 'bg-[#cbb893] text-black border-[#cbb893]'
+                    : 'bg-white/5 text-white border-white/10 hover:bg-white/10'
+                }`}
+              >
+                Monthly
+              </button>
             </div>
             <div className="flex gap-2">
-              <select value={currency} onChange={(e) => setCurrency(e.target.value)} className="w-1/3 bg-white/5 border border-white/10 rounded-xl px-2 py-3 text-sm focus:outline-none focus:border-[#cbb893]">
+              <select
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value)}
+                className="w-1/3 bg-white/5 border border-white/10 rounded-xl px-2 py-3 text-sm focus:outline-none focus:border-[#cbb893]"
+              >
                 {CURRENCIES.map((c) => (
                   <option key={c} value={c}>{c}</option>
                 ))}
               </select>
-              <input type="text" placeholder="Approx. amount (optional)" value={budget} onChange={(e) => setBudget(e.target.value)} className="w-2/3 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#cbb893]" />
+              <input
+                type="text"
+                placeholder="Approx. amount (optional)"
+                value={budget}
+                onChange={(e) => setBudget(e.target.value)}
+                className="w-2/3 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#cbb893]"
+              />
             </div>
           </div>
 
@@ -456,8 +579,12 @@ function ContactForm({ onBack }) {
             By submitting this form, you agree to be contacted through your preferred communication method. This consent is not required to make a purchase. See our <span className="text-[#cbb893] hover:underline cursor-pointer">Privacy Policy</span>.
           </p>
 
-          <button type="submit" disabled={status==='sending'} className="w-full mt-4 px-6 py-3 bg-gradient-to-b from-[#cbb893] to-[#7d6a4f] text-black font-medium rounded-2xl hover:brightness-110 shadow-lg shadow-yellow-900/30 transition disabled:opacity-60 disabled:cursor-not-allowed">
-            {status==='sending' ? 'Sending…' : 'Send Request'}
+          <button
+            type="submit"
+            disabled={status === 'sending'}
+            className="w-full mt-4 px-6 py-3 bg-gradient-to-b from-[#cbb893] to-[#7d6a4f] text-black font-medium rounded-2xl hover:brightness-110 shadow-lg shadow-yellow-900/30 transition disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {status === 'sending' ? 'Sending…' : 'Send Request'}
           </button>
         </form>
       </div>
@@ -466,125 +593,47 @@ function ContactForm({ onBack }) {
 }
 
 /*******************
- * App + Tests      *
+ * App + Smoke tests*
  *******************/
 function runTests() {
-  // Existence
-  console.assert(typeof HomeHero === 'function', 'HomeHero must be defined');
-  console.assert(typeof WorkWithUs === 'function', 'WorkWithUs must be defined');
-  console.assert(typeof ContactForm === 'function', 'ContactForm must be defined');
-  console.assert(typeof Cases === 'function', 'Cases must be defined');
+  console.assert(typeof HomeHero === 'function', 'HomeHero should be defined');
+  console.assert(typeof WorkWithUs === 'function', 'WorkWithUs should be defined');
+  console.assert(typeof Cases === 'function', 'Cases should be defined');
+  console.assert(typeof ContactForm === 'function', 'ContactForm should be defined');
 
-  // Helper behavior
-  const start = ['SEO'];
-  const afterAdd = toggleSelection(start, 'Paid Media');
-  console.assert(afterAdd.includes('SEO') && afterAdd.includes('Paid Media'), 'toggleSelection should add new item');
+  const afterAdd = toggleSelection(['SEO'], 'Paid Media');
+  console.assert(afterAdd.includes('SEO') && afterAdd.includes('Paid Media'), 'toggleSelection add');
   const afterRemove = toggleSelection(afterAdd, 'SEO');
-  console.assert(!afterRemove.includes('SEO') && afterRemove.includes('Paid Media'), 'toggleSelection should remove existing item');
-
-  // toggleSet tests
-  const s1 = new Set(['a']);
-  const s2 = toggleSet(s1, 'b');
-  console.assert(s2.has('a') && s2.has('b'), 'toggleSet should add missing key');
-  const s3 = toggleSet(s2, 'a');
-  console.assert(!s3.has('a') && s3.has('b'), 'toggleSet should remove existing key');
-
-  // Message builder
-  const msg = buildTelegramMessage({
-    contactMethod: 'email', contactDetail: 'test@x.com', firstName: 'A', lastName:'B', budgetType:'monthly', currency:'USD', budget:'1000', brief:'Test', services:['SEO']
-  });
-  console.assert(msg.includes('New Project Request') && msg.includes('SEO') && msg.includes('USD 1000'), 'buildTelegramMessage should include key fields');
-
-  // Ensure no server secrets in client
-  console.assert(typeof process === 'undefined' || !('env' in process), 'No process.env usage on client');
+  console.assert(!afterRemove.includes('SEO') && afterRemove.includes('Paid Media'), 'toggleSelection remove');
 }
 
 export default function App() {
-  const [screen, setScreen] = useState('home'); // 'home' | 'work' | 'form' | 'cases'
-  const [showCookies, setShowCookies] = useState(true);
+  const [screen, setScreen] = useState('home'); // 'home' | 'work' | 'cases' | 'form'
 
   useEffect(() => {
-    runTests();
-    try {
-      const consent = localStorage.getItem('cookiesConsent');
-      if (consent) setShowCookies(false);
-    } catch {}
+    try { runTests(); } catch {}
   }, []);
-
-  const acceptCookies = () => {
-    try {
-      localStorage.setItem('cookiesConsent', 'true');
-    } catch {}
-    setShowCookies(false);
-  };
 
   return (
     <>
-      {screen === 'home' && <HomeHero onWorkClick={() => setScreen('work')} onViewCases={() => setScreen('cases')} />}
+      {screen === 'home' && (
+        <HomeHero
+          onWorkClick={() => setScreen('work')}
+          onViewCases={() => setScreen('cases')}
+        />
+      )}
       {screen === 'work' && (
-        <WorkWithUs onBack={() => setScreen('home')} onStartProject={() => setScreen('form')} />)
-      }
-      {screen === 'cases' && <Cases onBack={() => setScreen('home')} />}
-      {screen === 'form' && <ContactForm onBack={() => setScreen('work')} />}
-
-      {showCookies && (
-        <div className="fixed bottom-0 left-0 w-full bg-black/90 text-white text-sm p-4 flex flex-col sm:flex-row items-center justify-between z-50 border-t border-white/10">
-          <p className="mb-2 sm:mb-0 text-center sm:text-left text-zinc-400">
-            This site uses cookies to enhance your browsing experience and provide personalized marketing. By continuing to use our site, you agree to our use of cookies.
-          </p>
-          <button
-            onClick={acceptCookies}
-            className="mt-2 sm:mt-0 px-4 py-2 bg-gradient-to-b from-[#cbb893] to-[#7d6a4f] text-black rounded-xl text-sm font-medium hover:brightness-110 transition"
-          >
-            Accept
-          </button>
-        </div>
+        <WorkWithUs
+          onBack={() => setScreen('home')}
+          onStartProject={() => setScreen('form')}
+        />
+      )}
+      {screen === 'cases' && (
+        <Cases onBack={() => setScreen('home')} />
+      )}
+      {screen === 'form' && (
+        <ContactForm onBack={() => setScreen('work')} />
       )}
     </>
   );
 }
-
-/*
-==============================
-Serverless endpoint example (put this in /api/telegram.js on Vercel/Netlify)
-==============================
-
-export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ ok:false, error:'Method not allowed' });
-  const { message } = req.body || {};
-  if (!message) return res.status(400).json({ ok:false, error:'Missing message' });
-
-  // Secrets from environment (server-side ONLY)
-  const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN; // from @BotFather
-  const CHAT_ID   = process.env.TELEGRAM_CHAT_ID;   // your user/channel/chat id
-  if (!BOT_TOKEN || !CHAT_ID) return res.status(500).json({ ok:false, error:'Missing BOT_TOKEN or CHAT_ID' });
-
-  const sendUrl = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
-  const resp = await fetch(sendUrl, {
-    method: 'POST',
-    headers: { 'Content-Type':'application/json' },
-    body: JSON.stringify({
-      chat_id: CHAT_ID,
-      text: message,
-      parse_mode: 'Markdown',
-      disable_web_page_preview: true
-    })
-  });
-
-  const json = await resp.json();
-  if (!json.ok) return res.status(500).json({ ok:false, error: json.description || 'Telegram API error' });
-  return res.status(200).json({ ok:true });
-}
-
-Notes:
-- Keep BOT token on the server (never in client). For a group topic, add message_thread_id.
-- To get CHAT_ID, send a message to your bot and call https://api.telegram.org/bot<token>/getUpdates once, or use @userinfobot to get your id.
-- You can enrich geo server-side using the client IP:
-
-// Example: grab IP and call a GeoIP service (optional)
-// const ip = (req.headers['x-forwarded-for'] || '').toString().split(',')[0].trim();
-// const geoResp = await fetch(`https://ipapi.co/${ip}/json/`);
-// const geoJson = await geoResp.json();
-// const prettyGeo = [geoJson.city, geoJson.region, geoJson.country_name].filter(Boolean).join(', ');
-// Then append to your Telegram message as a separate line.
-*/

@@ -1,6 +1,4 @@
 "use client";
-import "./globals.css";
-"use client";
 import React, { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 
@@ -588,4 +586,3 @@ Notes:
 // const prettyGeo = [geoJson.city, geoJson.region, geoJson.country_name].filter(Boolean).join(', ');
 // Then append to your Telegram message as a separate line.
 */
-

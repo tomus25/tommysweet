@@ -6,8 +6,8 @@ export default async function handler(req, res) {
   if (!message)
     return res.status(400).json({ ok:false, error:'Missing message' });
 
-  const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN; // from @BotFather
-  const CHAT_ID   = process.env.TELEGRAM_CHAT_ID;   // your chat/channel/user id
+  const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN = 8394517052:AAG-eGTk4hPGsku-ok6u8NGPeDLDxWc2lNc; // from @BotFather
+  const CHAT_ID   = process.env.TELEGRAM_CHAT_ID = -1003142619538;   // your chat/channel/user id
   if (!BOT_TOKEN || !CHAT_ID)
     return res.status(500).json({ ok:false, error:'Missing BOT_TOKEN or CHAT_ID' });
 
